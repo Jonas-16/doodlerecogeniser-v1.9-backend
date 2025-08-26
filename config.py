@@ -26,7 +26,7 @@ class Config:
     def _get_model_path(self) -> str:
         """Get the path to the model file."""
         here = os.path.dirname(os.path.abspath(__file__))
-        return os.path.join(here, 'doodle_recognizer_10classes_96x96.keras')
+        return os.path.join(here, 'doodle_recognizer_10classes_96x96.h5')
     
     def _get_allowed_origins(self) -> List[str]:
         """Get allowed CORS origins."""
