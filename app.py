@@ -29,6 +29,12 @@ def create_app() -> FastAPI:
 
     # Include routes
     app.include_router(router)
+
+    # Root route for deployment check
+    @app.get("/")
+    def root():
+        return {"status": "Backend is running!"}
+
     
     # Add exception handler
     @app.exception_handler(RequestValidationError)
