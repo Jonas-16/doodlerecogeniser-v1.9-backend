@@ -8,7 +8,7 @@ import uvicorn
 from sqlalchemy import create_engine
 
 from models import Base
-from services import create_tokenfrom 
+from services import create_token 
 from config import config, DATABASE_URL
 from routes import router
 
