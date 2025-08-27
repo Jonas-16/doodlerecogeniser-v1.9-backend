@@ -3,12 +3,15 @@
 import numpy as np
 from typing import Optional, Dict, List, Tuple
 from config import config
+from sqlalchemy import Column, Integer, String
+from sqlalchemy.ext.declarative import declarative_base
 
 try:
     import tensorflow as tf  # type: ignore
 except Exception:
     tf = None
 
+Base = declarative_base()
 
 class DoodleModel:
     """Encapsulates the doodle recognition model."""
@@ -81,3 +84,9 @@ class DoodleModel:
 
 # Global model instance
 doodle_model = DoodleModel()
+
+class User(Base):
+    __tablename__ = "users"
+    id = Column(Integer, primary_key=True, index=True)
+    email = Column(String, unique=True, index=True, nullable=False)
+    password_hash = Column(String, nullable=False)

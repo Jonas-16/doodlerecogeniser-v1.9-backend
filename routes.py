@@ -4,9 +4,12 @@ import base64
 import numpy as np
 from io import BytesIO
 from PIL import Image, ImageFilter, ImageEnhance
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from fastapi.responses import StreamingResponse, JSONResponse
 from fastapi.exceptions import RequestValidationError
+from sqlalchemy.orm import Session
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 
 from schemas import (
     PredictionRequest, PredictionResponse, TestResponse, 
@@ -14,7 +17,9 @@ from schemas import (
     GenAIGuessResponse, HealthResponse, GenAIStatusResponse,
     StabilityGenerateRequest, StabilityGenerateResponse,
 )
-from models import doodle_model
+from schemas import UserCreate, UserLogin, UserResponse
+from models import doodle_model, User
+from services import hash_password, verify_password
 from preprocessing import ImagePreprocessor
 from services import (
     genai_service,
@@ -30,6 +35,12 @@ router = APIRouter()
 # Initialize preprocessor
 preprocessor = ImagePreprocessor()
 
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
 # Exception handler will be added to the main app, not the router
 
@@ -297,3 +308,21 @@ async def stability_generate_download(req: StabilityGenerateRequest):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Unexpected error: {e}")
+
+@router.post("/signup", response_model=UserResponse)
+def signup(user: UserCreate, db: Session = Depends(get_db)):
+    if db.query(User).filter(User.email == user.email).first():
+        raise HTTPException(status_code=400, detail="Email already registered")
+    new_user = User(email=user.email, password_hash=hash_password(user.password))
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+    return new_user
+
+@router.post("/login")
+def login(user: UserLogin, db: Session = Depends(get_db)):
+    db_user = db.query(User).filter(User.email == user.email).first()
+    if not db_user or not verify_password(user.password, db_user.password_hash):
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+    token = create_token(db_user.id, db_user.email)
+    return {"access_token": token, "token_type": "bearer"}

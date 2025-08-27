@@ -5,6 +5,8 @@ import random
 import base64
 from typing import Any, Tuple, Optional
 from pathlib import Path
+import bcrypt, jwt, datetime
+from config import SECRET_KEY
 
 
 try:
@@ -454,6 +456,23 @@ else:
     else:
         print("GEMINI_API_KEY not set; Gemini functionality will be unavailable.")
 
+
+def hash_password(password: str) -> str:
+    return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+
+def verify_password(password: str, hashed: str) -> bool:
+    return bcrypt.checkpw(password.encode("utf-8"), hashed.encode("utf-8"))
+
+def create_token(user_id: int, email: str) -> str:
+    payload = {
+        "sub": user_id,
+        "email": email,
+        "exp": datetime.datetime.utcnow() + datetime.timedelta(hours=24)
+    }
+    return jwt.encode(payload, SECRET_KEY, algorithm="HS256")
+
+def decode_token(token: str):
+    return jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
 
 # ---------------------- Example Usage ----------------------
 """

@@ -1,8 +1,7 @@
 """Pydantic schemas for API requests and responses."""
 
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
 from typing import List, Dict, Any, Optional
-
 
 class PredictionRequest(BaseModel):
     """Request schema for prediction endpoint."""
@@ -75,3 +74,18 @@ class StabilityGenerateResponse(BaseModel):
     """Response schema for Stability AI image generation."""
     image_base64: str  # base64-encoded image without data URL prefix
     format: str  # e.g., "png"
+
+class UserCreate(BaseModel):
+    email: EmailStr
+    password: str
+
+class UserLogin(BaseModel):
+    email: EmailStr
+    password: str
+
+class UserResponse(BaseModel):
+    id: int
+    email: EmailStr
+
+    class Config:
+        orm_mode = True

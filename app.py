@@ -5,10 +5,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 import uvicorn
+from sqlalchemy import create_engine
 
-from config import config
+from models import Base
+from services import create_tokenfrom 
+from config import config, DATABASE_URL
 from routes import router
-
 
 def create_app() -> FastAPI:
     """Create and configure the FastAPI application."""
