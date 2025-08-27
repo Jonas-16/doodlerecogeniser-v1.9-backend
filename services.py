@@ -5,7 +5,9 @@ import random
 import base64
 from typing import Any, Tuple, Optional
 from pathlib import Path
-import bcrypt, jwt, datetime
+import bcrypt
+import jwt
+import datetime
 from config import SECRET_KEY
 
 
