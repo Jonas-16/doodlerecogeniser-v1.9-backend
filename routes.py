@@ -28,6 +28,7 @@ from services import (
     get_stability_status,
 )
 from config import config
+from database import SessionLocal
 
 # Create router
 router = APIRouter()
