@@ -12,6 +12,11 @@ from services import create_token
 from config import config, DATABASE_URL
 from routes import router
 
+origins = [
+    "https://doodlerecogeniser-v1-9-frontend.vercel.app",  # your live frontend
+    "http://localhost:3000",  # keep for local dev
+]
+
 def create_app() -> FastAPI:
     """Create and configure the FastAPI application."""
     app = FastAPI(
@@ -23,11 +28,12 @@ def create_app() -> FastAPI:
     # CORS configuration
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],  # Allow all origins for development
-        allow_credentials=False,  # Set to False when using allow_origins=["*"]
-        allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-        allow_headers=["*"],
+        allow_origins=origins,
+        allow_credentials=True,  # allow cookies / auth headers
+        allow_methods=["*"],     # allow all HTTP methods
+        allow_headers=["*"],     # allow all headers
     )
+
 
     # Include routes
     app.include_router(router)
