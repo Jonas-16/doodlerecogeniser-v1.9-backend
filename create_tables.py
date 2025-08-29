@@ -1,6 +1,6 @@
 # create_tables.py
 from database import engine, Base
-import nodels
+import models
 
 def create_tables():
     print("📦 Creating tables...")

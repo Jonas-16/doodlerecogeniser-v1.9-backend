@@ -2,13 +2,13 @@
 
 import os
 from typing import List
+from dotenv import load_dotenv
 
-# Load .env if present for easier local configuration
-try:
-    from dotenv import load_dotenv  # type: ignore
-    load_dotenv()
-except Exception:
-    pass
+load_dotenv()  # loads .env
+
+SECRET_KEY = os.getenv("SECRET_KEY", "fallback_secret")
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./users.db")
+
 
 
 class Config:
@@ -44,7 +44,3 @@ class Config:
 
 # Global config instance
 config = Config()
-
-
-SECRET_KEY = os.getenv("SECRET_KEY", "fallback_secret")
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./users.db")

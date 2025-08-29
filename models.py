@@ -5,13 +5,12 @@ from typing import Optional, Dict, List, Tuple
 from config import config
 from sqlalchemy import Column, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
+from database import Base
 
 try:
     import tensorflow as tf  # type: ignore
 except Exception:
     tf = None
-
-Base = declarative_base()
 
 class DoodleModel:
     """Encapsulates the doodle recognition model."""

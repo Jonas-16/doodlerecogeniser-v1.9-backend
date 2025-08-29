@@ -1,10 +1,8 @@
-# database.py
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
-import os
-from config import DATABASE_URL  # import from config.py
+from config import DATABASE_URL  # use the one from config.py
 
-DATABASE_URL = os.getenv("DATABASE_URL")
+print("Using DATABASE_URL:", DATABASE_URL)  # verify it's correct
 
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
