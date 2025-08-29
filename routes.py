@@ -19,7 +19,7 @@ from schemas import (
 )
 from schemas import UserCreate, UserLogin, UserResponse
 from models import doodle_model, User
-from services import hash_password, verify_password
+from services import hash_password, verify_password, create_token
 from preprocessing import ImagePreprocessor
 from services import (
     genai_service,
