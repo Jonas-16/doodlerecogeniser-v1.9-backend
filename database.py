@@ -2,6 +2,7 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 import os
+from config import DATABASE_URL  # import from config.py
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 
