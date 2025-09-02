@@ -78,7 +78,7 @@ async def predict(image: ImageInput, db: Session = Depends(get_db), user_id: int
     img_batch = np.expand_dims(img_array, axis=0)
 
     # Run model prediction
-    predictions = model.predict(img_batch)
+    predictions = doodle_model.predict(img_batch)
     confidence = float(np.max(predictions))
     label = str(np.argmax(predictions))
 
