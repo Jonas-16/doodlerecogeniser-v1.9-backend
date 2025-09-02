@@ -71,23 +71,13 @@ async def health():
 
 @router.post("/predict", response_model=PredictionResponse)
 async def predict(image: ImageInput, db: Session = Depends(get_db), user_id: int = None):
-    print("image.image type:", type(image.image))
-    print("image.image length:", len(image.image))
-    print("First element type:", type(image.image[0]) if image.image else None)
-    print("First element value:", image.image[0] if image.image else None)
-    # Convert incoming base64 → numpy array
     img_array = np.array(image.image).astype("float32").reshape(28, 28, 1) / 255.0
     img_batch = np.expand_dims(img_array, axis=0)
 
-    # Run model prediction
-    predictions = doodle_model.predict(img_batch)
-    confidence = float(np.max(predictions))
-    label = str(np.argmax(predictions))
+    # Unpack the tuple returned by doodle_model.predict
+    label, confidence, top_predictions, all_predictions = doodle_model.predict(img_batch)
 
-    # Build all_predictions as {class: prob}
-    all_predictions = {str(i): float(predictions[0][i]) for i in range(len(predictions[0]))}
-
-    # ✅ If a user_id is provided, save automatically
+    # Save prediction history if user_id is provided
     if user_id:
         history = PredictionHistory(
             user_id=user_id,
@@ -102,7 +92,7 @@ async def predict(image: ImageInput, db: Session = Depends(get_db), user_id: int
     return PredictionResponse(
         label=label,
         confidence=confidence,
-        top_predictions=[(label, confidence)],
+        top_predictions=top_predictions,
         all_predictions=all_predictions,
     )
 
