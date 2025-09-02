@@ -3,9 +3,11 @@
 import numpy as np
 from typing import Optional, Dict, List, Tuple
 from config import config
-from sqlalchemy import Column, Integer, String
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
+from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
 from database import Base
+from datetime import datetime
 
 try:
     import tensorflow as tf  # type: ignore
@@ -89,3 +91,16 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     email = Column(String, unique=True, index=True, nullable=False)
     password_hash = Column(String, nullable=False)
+
+    predictions = relationship("PredictionHistory", back_populates="user")
+
+
+class PredictionHistory(Base):
+    __tablename__ = "prediction_history"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)  # assuming your user table is "users"
+    predicted_class = Column(String, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    user = relationship("User", back_populates="predictions")

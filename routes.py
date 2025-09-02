@@ -18,7 +18,7 @@ from schemas import (
     StabilityGenerateRequest, StabilityGenerateResponse,
 )
 from schemas import UserCreate, UserLogin, UserResponse
-from models import doodle_model, User
+from models import doodle_model, User, PredictionHistory
 from services import hash_password, verify_password, create_token
 from preprocessing import ImagePreprocessor
 from services import (
@@ -28,7 +28,9 @@ from services import (
     get_stability_status,
 )
 from config import config
-from database import SessionLocal
+from database import SessionLocal, get_db
+from datetime import datetime
+
 
 # Create router
 router = APIRouter()
@@ -327,3 +329,26 @@ def login(user: UserLogin, db: Session = Depends(get_db)):
         raise HTTPException(status_code=401, detail="Invalid credentials")
     token = create_token(db_user.id, db_user.email)
     return {"access_token": token, "token_type": "bearer"}
+
+@router.post("/save_prediction")
+def save_prediction(user_id: int, predicted_class: str, db: Session = Depends(get_db)):
+    history = PredictionHistory(
+        user_id=user_id,
+        predicted_class=predicted_class,
+        created_at=datetime.utcnow()
+    )
+    db.add(history)
+    db.commit()
+    db.refresh(history)
+    return {"message": "Prediction saved", "history_id": history.id}
+
+@router.get("/get_history/{user_id}")
+def get_history(user_id: int, db: Session = Depends(get_db)):
+    history = db.query(PredictionHistory).filter(PredictionHistory.user_id == user_id).all()
+    return [
+        {
+            "predicted_class": h.predicted_class,
+            "date": h.created_at.strftime("%Y-%m-%d %H:%M:%S")
+        }
+        for h in history
+    ]
