@@ -71,30 +71,36 @@ async def health():
 
 
 @router.post("/predict", response_model=PredictionResponse)
-async def predict(image: ImageInput, db: Session = Depends(get_db), user_id: int = None):
-    # Convert flat image to 28x28x1 numpy array
-    img_array = np.array(image.image).astype("float32").reshape(28, 28, 1) / 255.0
-    img_batch = np.expand_dims(img_array, axis=0)  # shape: (1, 28, 28, 1)
+async def predict(req: PredictionRequest):
+    try:
+        if not doodle_model.is_loaded:
+            raise HTTPException(
+                status_code=503, 
+                detail="Model not available on server (TensorFlow not installed or model failed to load)"
+            )
+        
+        expected = req.width * req.height
+        if len(req.image) != expected:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Invalid data length. Expected {expected}, got {len(req.image)}"
+            )
 
-    label, confidence, top_predictions, all_predictions = doodle_model.predict(img_batch)
+        pixel_array = np.array(req.image, dtype='float32')
+        processed = preprocessor.preprocess_from_flat(pixel_array, req.width, req.height)
+        label, confidence, top_predictions, all_predictions = doodle_model.predict(processed)
 
-    # Save prediction history if user_id is provided
-    if user_id:
-        history = PredictionHistory(
-            user_id=user_id,
-            predicted_class=label,
-            created_at=datetime.utcnow()
+        return PredictionResponse(
+            label=label,
+            confidence=confidence,
+            top_predictions=top_predictions,
+            all_predictions=all_predictions,
         )
-        db.add(history)
-        db.commit()
-        db.refresh(history)
-
-    return PredictionResponse(
-        label=label,
-        confidence=confidence,
-        top_predictions=top_predictions,
-        all_predictions=all_predictions,
-    )
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/download_processed")
