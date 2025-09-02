@@ -307,7 +307,11 @@ def signup(user: UserCreate, db: Session = Depends(get_db)):
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
-    return new_user
+    return {
+        "id": new_user.id,
+        "email": new_user.email
+        # add other fields if needed
+    }
 
 @router.post("/login")
 def login(user: UserLogin, db: Session = Depends(get_db)):
@@ -315,7 +319,11 @@ def login(user: UserLogin, db: Session = Depends(get_db)):
     if not db_user or not verify_password(user.password, db_user.password_hash):
         raise HTTPException(status_code=401, detail="Invalid credentials")
     token = create_token(db_user.id, db_user.email)
-    return {"access_token": token, "token_type": "bearer"}
+    return {
+        "access_token": token,
+        "token_type": "bearer",
+        "user_id": db_user.id
+    }
 
 @router.post("/save_prediction")
 def save_prediction(user_id: int, predicted_class: str, db: Session = Depends(get_db)):
