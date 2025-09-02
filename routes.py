@@ -347,3 +347,15 @@ def save_prediction(user_id: int, predicted_class: str, db: Session = Depends(ge
     db.commit()
     db.refresh(history)
     return {"message": "Prediction saved", "history_id": history.id}
+
+@router.get("/get_history/{user_id}")
+def get_history(user_id: int, db: Session = Depends(get_db)):
+    history = db.query(PredictionHistory).filter(PredictionHistory.user_id == user_id).all()
+    # Always return a list, even if empty
+    return [
+        {
+            "predicted_class": h.predicted_class,
+            "created_at": h.created_at.isoformat()
+        }
+        for h in history
+    ]
