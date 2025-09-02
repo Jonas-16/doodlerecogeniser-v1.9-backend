@@ -89,3 +89,8 @@ class UserResponse(BaseModel):
 
     class Config:
         orm_mode = True
+
+class ImageInput(BaseModel):
+    image: List[float]
+    width: int = 28
+    height: int = 28
