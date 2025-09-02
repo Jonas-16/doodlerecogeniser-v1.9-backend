@@ -10,6 +10,7 @@ from fastapi.exceptions import RequestValidationError
 from sqlalchemy.orm import Session
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+import cv2
 
 from schemas import (
     PredictionRequest, PredictionResponse, TestResponse, 
@@ -72,6 +73,7 @@ async def health():
 @router.post("/predict", response_model=PredictionResponse)
 async def predict(image: ImageInput, db: Session = Depends(get_db), user_id: int = None):
     img_array = np.array(image.image).astype("float32").reshape(28, 28, 1) / 255.0
+    img_array = cv2.resize(img_array, (96, 96))  # if needed
     img_batch = np.expand_dims(img_array, axis=0)
 
     # Unpack the tuple returned by doodle_model.predict

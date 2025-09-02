@@ -37,6 +37,7 @@ class DoodleModel:
             print("Loading Keras model ...")
             self.model = tf.keras.models.load_model(config.model_path)
             print("Model loaded successfully.")
+            print("Model input shape:", self.model.input_shape)
         except Exception as e:
             print(f"Warning: Failed to load Keras model: {e}")
             self.model = None
