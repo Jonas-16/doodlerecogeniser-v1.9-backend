@@ -28,7 +28,7 @@ from services import (
     get_stability_status,
 )
 from config import config
-from database import SessionLocal, get_db
+from database import SessionLocal
 from datetime import datetime
 
 
