@@ -69,51 +69,39 @@ async def health():
 
 
 @router.post("/predict", response_model=PredictionResponse)
-async def predict(req: PredictionRequest):
-    """Predict the class of a doodle image."""
-    try:
-        if not doodle_model.is_loaded:
-            raise HTTPException(
-                status_code=503, 
-                detail="Model not available on server (TensorFlow not installed or model failed to load)"
-            )
-        
-        expected = req.width * req.height
-        if len(req.image) != expected:
-            raise HTTPException(
-                status_code=400, 
-                detail=f"Invalid data length. Expected {expected}, got {len(req.image)}"
-            )
+async def predict(image: ImageInput, db: Session = Depends(get_db), user_id: int = None):
+    """Run doodle recognition and automatically save the prediction for the user."""
 
-        pixel_array = np.array(req.image, dtype='float32')
-        
-        # Debug basic stats about incoming data
-        try:
-            print(f"/predict received {len(req.image)} px, range {pixel_array.min():.3f}-{pixel_array.max():.3f}, mean {pixel_array.mean():.3f}")
-        except Exception:
-            pass
-        
-        processed = preprocessor.preprocess_from_flat(pixel_array, req.width, req.height)
+    # Convert incoming base64 → numpy array
+    img_array = np.array(image.pixels).astype("float32").reshape(28, 28, 1) / 255.0
+    img_batch = np.expand_dims(img_array, axis=0)
 
-        # Log processed stats
-        try:
-            print(f"processed shape {processed.shape}, range {processed.min():.3f}-{processed.max():.3f}, mean {processed.mean():.3f}")
-        except Exception:
-            pass
+    # Run model prediction
+    predictions = model.predict(img_batch)
+    confidence = float(np.max(predictions))
+    label = str(np.argmax(predictions))
 
-        label, confidence, top_predictions, all_predictions = doodle_model.predict(processed)
+    # Build all_predictions as {class: prob}
+    all_predictions = {str(i): float(predictions[0][i]) for i in range(len(predictions[0]))}
 
-        return PredictionResponse(
-            label=label,
-            confidence=confidence,
-            top_predictions=top_predictions,
-            all_predictions=all_predictions,
+    # ✅ If a user_id is provided, save automatically
+    if user_id:
+        history = PredictionHistory(
+            user_id=user_id,
+            predicted_class=label,
+            created_at=datetime.utcnow()
         )
-    
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        db.add(history)
+        db.commit()
+        db.refresh(history)
+
+    # Return response to frontend
+    return PredictionResponse(
+        label=label,
+        confidence=confidence,
+        top_predictions=[(label, confidence)],
+        all_predictions=all_predictions,
+    )
 
 
 @router.post("/download_processed")
