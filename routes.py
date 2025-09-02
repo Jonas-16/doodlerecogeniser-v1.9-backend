@@ -71,8 +71,10 @@ async def health():
 
 @router.post("/predict", response_model=PredictionResponse)
 async def predict(image: ImageInput, db: Session = Depends(get_db), user_id: int = None):
-    """Run doodle recognition and automatically save the prediction for the user."""
-
+    print("image.image type:", type(image.image))
+    print("image.image length:", len(image.image))
+    print("First element type:", type(image.image[0]) if image.image else None)
+    print("First element value:", image.image[0] if image.image else None)
     # Convert incoming base64 → numpy array
     img_array = np.array(image.image).astype("float32").reshape(28, 28, 1) / 255.0
     img_batch = np.expand_dims(img_array, axis=0)
