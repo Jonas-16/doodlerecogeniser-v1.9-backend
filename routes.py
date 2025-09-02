@@ -71,7 +71,7 @@ async def health():
 
 
 @router.post("/predict", response_model=PredictionResponse)
-async def predict(req: PredictionRequest):
+async def predict(req: PredictionRequest, db: Session = Depends(get_db)):
     try:
         if not doodle_model.is_loaded:
             raise HTTPException(
@@ -89,6 +89,17 @@ async def predict(req: PredictionRequest):
         pixel_array = np.array(req.image, dtype='float32')
         processed = preprocessor.preprocess_from_flat(pixel_array, req.width, req.height)
         label, confidence, top_predictions, all_predictions = doodle_model.predict(processed)
+        user_id = req.user_id  # Add user_id to PredictionRequest schema
+
+        if user_id:
+            history = PredictionHistory(
+                user_id=user_id,
+                predicted_class=label,
+                created_at=datetime.utcnow()
+            )
+            db.add(history)
+            db.commit()
+            db.refresh(history)
 
         return PredictionResponse(
             label=label,
@@ -336,14 +347,3 @@ def save_prediction(user_id: int, predicted_class: str, db: Session = Depends(ge
     db.commit()
     db.refresh(history)
     return {"message": "Prediction saved", "history_id": history.id}
-
-@router.get("/get_history/{user_id}")
-def get_history(user_id: int, db: Session = Depends(get_db)):
-    history = db.query(PredictionHistory).filter(PredictionHistory.user_id == user_id).all()
-    return [
-        {
-            "predicted_class": h.predicted_class,
-            "date": h.created_at.strftime("%Y-%m-%d %H:%M:%S")
-        }
-        for h in history
-    ]
