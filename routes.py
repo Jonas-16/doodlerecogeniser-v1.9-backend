@@ -72,11 +72,10 @@ async def health():
 
 @router.post("/predict", response_model=PredictionResponse)
 async def predict(image: ImageInput, db: Session = Depends(get_db), user_id: int = None):
+    # Convert flat image to 28x28x1 numpy array
     img_array = np.array(image.image).astype("float32").reshape(28, 28, 1) / 255.0
-    img_array = cv2.resize(img_array, (96, 96))  # if needed
-    img_batch = np.expand_dims(img_array, axis=0)
+    img_batch = np.expand_dims(img_array, axis=0)  # shape: (1, 28, 28, 1)
 
-    # Unpack the tuple returned by doodle_model.predict
     label, confidence, top_predictions, all_predictions = doodle_model.predict(img_batch)
 
     # Save prediction history if user_id is provided
@@ -90,7 +89,6 @@ async def predict(image: ImageInput, db: Session = Depends(get_db), user_id: int
         db.commit()
         db.refresh(history)
 
-    # Return response to frontend
     return PredictionResponse(
         label=label,
         confidence=confidence,
