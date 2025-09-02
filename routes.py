@@ -30,6 +30,7 @@ from services import (
 from config import config
 from database import SessionLocal
 from datetime import datetime
+from schemas import ImageInput
 
 
 # Create router
