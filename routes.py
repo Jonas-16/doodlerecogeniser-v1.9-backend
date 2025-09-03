@@ -4,7 +4,7 @@ import base64
 import numpy as np
 from io import BytesIO
 from PIL import Image, ImageFilter, ImageEnhance
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, status
 from fastapi.responses import StreamingResponse, JSONResponse
 from fastapi.exceptions import RequestValidationError
 from fastapi.security import OAuth2PasswordBearer
@@ -75,21 +75,29 @@ async def health():
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
-def get_current_user_id(token: str = Depends(oauth2_scheme)) -> int:
+def get_current_user(token: str = Depends(oauth2_scheme)) -> int:
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
         user_id: int = payload.get("sub")
         if user_id is None:
-            raise HTTPException(status_code=401, detail="Invalid authentication token")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid authentication credentials",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
         return user_id
     except JWTError:
-        raise HTTPException(status_code=401, detail="Invalid or expired token")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
 
 @router.post("/predict", response_model=PredictionResponse)
 async def predict(
     req: PredictionRequest,
     db: Session = Depends(get_db),
-    user_id: int = Depends(get_current_user_id)  # 🔑 user comes from token
+    user_id: int = Depends(get_current_user)  # 🔑 user comes from token
 ):
     try:
         if not doodle_model.is_loaded:
