@@ -335,13 +335,19 @@ def get_history(user_id: int, db: Session = Depends(get_db)):
         for h in history
     ]
 
-@router.post("/login", response_model=UserResponse)
+@router.post("/login")
 def login(req: UserLogin, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.username == req.username).first()
     if not user or not verify_password(req.password, user.password_hash):
         raise HTTPException(status_code=401, detail="Invalid credentials")
+
     token = create_token(user.id, user.username)
-    return UserResponse(user_id=user.id, username=user.username, token=token)
+    return {
+        "access_token": token,
+        "token_type": "bearer",
+        "user_id": user.id,
+        "username": user.username
+    }
 
 @router.post("/signin", response_model=UserResponse)
 def signin(req: UserCreate, db: Session = Depends(get_db)):
