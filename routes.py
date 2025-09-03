@@ -78,12 +78,18 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
     try:
         payload = decode_token(token)
-        user = db.query(User).filter(User.id == payload["user_id"]).first()
+        user_id = payload.get("user_id") or payload.get("sub")  # 👈 support both
+        if user_id is None:
+            raise HTTPException(status_code=401, detail="Invalid token: no user id")
+        
+        user = db.query(User).filter(User.id == int(user_id)).first()
         if not user:
             raise HTTPException(status_code=401, detail="Invalid user")
         return user
-    except Exception:
+    except JWTError:
         raise HTTPException(status_code=401, detail="Invalid token")
+    except Exception:
+        raise HTTPException(status_code=401, detail="Authentication failed")
 
 @router.post("/predict", response_model=PredictionResponse)
 async def predict(
