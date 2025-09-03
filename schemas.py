@@ -8,6 +8,7 @@ class PredictionRequest(BaseModel):
     image: List[float]
     width: int = 28
     height: int = 28
+    user_id: Optional[int] = None
 
 
 class PredictionResponse(BaseModel):
