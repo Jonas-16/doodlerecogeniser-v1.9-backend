@@ -94,3 +94,8 @@ class ImageInput(BaseModel):
     image: List[float]
     width: int = 28
     height: int = 28
+
+
+class SavePredictionRequest(BaseModel):
+    user_id: int
+    predicted_class: str
