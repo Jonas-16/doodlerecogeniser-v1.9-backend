@@ -76,16 +76,12 @@ class StabilityGenerateResponse(BaseModel):
     format: str  # e.g., "png"
 
 class UserCreate(BaseModel):
-    email: EmailStr
-    password: str
-
-class UserLogin(BaseModel):
     username: str
     password: str
 
 class UserResponse(BaseModel):
-    id: int
-    email: EmailStr
+    user_id: int
+    username: str
 
     class Config:
         orm_mode = True
