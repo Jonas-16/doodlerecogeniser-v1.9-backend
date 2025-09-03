@@ -465,11 +465,11 @@ def hash_password(password: str) -> str:
 def verify_password(password: str, hashed: str) -> bool:
     return bcrypt.checkpw(password.encode("utf-8"), hashed.encode("utf-8"))
 
-def create_token(user_id: int, email: str) -> str:
+def create_token(user_id: int, username: str) -> str:
     payload = {
-        "sub": user_id,
-        "email": email,
-        "exp": datetime.datetime.utcnow() + datetime.timedelta(hours=24)
+        "sub": user_id,   # subject = user id
+        "username": username,  # store username in token
+        "exp": datetime.datetime.utcnow() + datetime.timedelta(hours=24)  # expiration
     }
     return jwt.encode(payload, SECRET_KEY, algorithm="HS256")
 
