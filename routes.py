@@ -23,7 +23,7 @@ from schemas import (
 )
 from schemas import UserCreate, UserLogin, UserResponse, SavePredictionRequest
 from models import doodle_model, User, PredictionHistory
-from services import hash_password, verify_password, create_token
+from services import hash_password, verify_password, create_token, decode_token
 from preprocessing import ImagePreprocessor
 from services import (
     genai_service,
@@ -75,29 +75,21 @@ async def health():
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
-def get_current_user(token: str = Depends(oauth2_scheme)) -> int:
+def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
-        user_id: int = payload.get("sub")
-        if user_id is None:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid authentication credentials",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
-        return user_id
-    except JWTError:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid token",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+        payload = decode_token(token)
+        user = db.query(User).filter(User.id == payload["user_id"]).first()
+        if not user:
+            raise HTTPException(status_code=401, detail="Invalid user")
+        return user
+    except Exception:
+        raise HTTPException(status_code=401, detail="Invalid token")
 
 @router.post("/predict", response_model=PredictionResponse)
 async def predict(
     req: PredictionRequest,
     db: Session = Depends(get_db),
-    user_id: int = Depends(get_current_user)  # 🔑 user comes from token
+    current_user: User = Depends(get_current_user)   # 🔑 authenticated user
 ):
     try:
         if not doodle_model.is_loaded:
@@ -119,15 +111,16 @@ async def predict(
         label, confidence, top_predictions, all_predictions = doodle_model.predict(processed)
 
         # save history securely
-        history = PredictionHistory(
-            user_id=user_id,
-            predicted_class=label,
-            confidence=confidence,
-            created_at=datetime.utcnow()
-        )
-        db.add(history)
-        db.commit()
-        db.refresh(history)
+        if current_user and label:
+            history = PredictionHistory(
+                user_id=current_user.id,
+                predicted_class=label,
+                confidence=confidence,
+                created_at=datetime.utcnow()
+            )
+            db.add(history)
+            db.commit()
+            db.refresh(history)
 
         return PredictionResponse(
             label=label,
