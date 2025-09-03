@@ -76,25 +76,26 @@ async def predict(req: PredictionRequest, db: Session = Depends(get_db)):
     try:
         if not doodle_model.is_loaded:
             raise HTTPException(
-                status_code=503, 
+                status_code=503,
                 detail="Model not available on server (TensorFlow not installed or model failed to load)"
             )
-        
+
         expected = req.width * req.height
         if len(req.image) != expected:
             raise HTTPException(
-                status_code=400, 
+                status_code=400,
                 detail=f"Invalid data length. Expected {expected}, got {len(req.image)}"
             )
 
+        # Preprocess and run prediction
         pixel_array = np.array(req.image, dtype='float32')
         processed = preprocessor.preprocess_from_flat(pixel_array, req.width, req.height)
         label, confidence, top_predictions, all_predictions = doodle_model.predict(processed)
-        user_id = req.user_id  # Add user_id to PredictionRequest schema
 
-        if user_id:
+        # Save history ONLY if prediction succeeded
+        if req.user_id and label:
             history = PredictionHistory(
-                user_id=user_id,
+                user_id=req.user_id,
                 predicted_class=label,
                 created_at=datetime.utcnow()
             )
@@ -108,10 +109,11 @@ async def predict(req: PredictionRequest, db: Session = Depends(get_db)):
             top_predictions=top_predictions,
             all_predictions=all_predictions,
         )
-    
+
     except HTTPException:
         raise
     except Exception as e:
+        # Don’t save "Error" to history — just return error
         raise HTTPException(status_code=500, detail=str(e))
 
 
