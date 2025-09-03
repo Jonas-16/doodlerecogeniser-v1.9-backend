@@ -7,9 +7,11 @@ from PIL import Image, ImageFilter, ImageEnhance
 from fastapi import APIRouter, HTTPException, Depends
 from fastapi.responses import StreamingResponse, JSONResponse
 from fastapi.exceptions import RequestValidationError
+from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from jose import jwt, JWTError
 import cv2
 from pydantic import BaseModel
 
@@ -29,7 +31,7 @@ from services import (
     generate_stability_from_data_url,
     get_stability_status,
 )
-from config import config
+from config import config, SECRET_KEY
 from database import SessionLocal
 from datetime import datetime
 from schemas import ImageInput
@@ -71,13 +73,29 @@ async def health():
     )
 
 
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
+
+def get_current_user_id(token: str = Depends(oauth2_scheme)) -> int:
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+        user_id: int = payload.get("sub")
+        if user_id is None:
+            raise HTTPException(status_code=401, detail="Invalid authentication token")
+        return user_id
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
+
 @router.post("/predict", response_model=PredictionResponse)
-async def predict(req: PredictionRequest, db: Session = Depends(get_db)):
+async def predict(
+    req: PredictionRequest,
+    db: Session = Depends(get_db),
+    user_id: int = Depends(get_current_user_id)  # 🔑 user comes from token
+):
     try:
         if not doodle_model.is_loaded:
             raise HTTPException(
                 status_code=503,
-                detail="Model not available on server (TensorFlow not installed or model failed to load)"
+                detail="Model not available on server"
             )
 
         expected = req.width * req.height
@@ -87,22 +105,21 @@ async def predict(req: PredictionRequest, db: Session = Depends(get_db)):
                 detail=f"Invalid data length. Expected {expected}, got {len(req.image)}"
             )
 
-        # Preprocess and run prediction
+        # preprocess
         pixel_array = np.array(req.image, dtype='float32')
         processed = preprocessor.preprocess_from_flat(pixel_array, req.width, req.height)
         label, confidence, top_predictions, all_predictions = doodle_model.predict(processed)
 
-        # Save history ONLY if prediction succeeded
-        if req.user_id and label:
-            history = PredictionHistory(
-                user_id=req.user_id,
-                predicted_class=label,
-                confidence=confidence, 
-                created_at=datetime.utcnow()
-            )
-            db.add(history)
-            db.commit()
-            db.refresh(history)
+        # save history securely
+        history = PredictionHistory(
+            user_id=user_id,
+            predicted_class=label,
+            confidence=confidence,
+            created_at=datetime.utcnow()
+        )
+        db.add(history)
+        db.commit()
+        db.refresh(history)
 
         return PredictionResponse(
             label=label,
@@ -114,9 +131,8 @@ async def predict(req: PredictionRequest, db: Session = Depends(get_db)):
     except HTTPException:
         raise
     except Exception as e:
-        # Don’t save "Error" to history — just return error
         raise HTTPException(status_code=500, detail=str(e))
-
+    
 
 @router.post("/download_processed")
 async def download_processed(req: PredictionRequest):
