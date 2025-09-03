@@ -340,7 +340,7 @@ def login(req: UserLogin, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.username == req.username).first()
     if not user or not verify_password(req.password, user.password_hash):
         raise HTTPException(status_code=401, detail="Invalid credentials")
-    token = create_token(user.id)
+    token = create_token(user.id, user.username)
     return UserResponse(user_id=user.id, username=user.username, token=token)
 
 @router.post("/signin", response_model=UserResponse)
@@ -352,5 +352,5 @@ def signin(req: UserCreate, db: Session = Depends(get_db)):
     db.add(user)
     db.commit()
     db.refresh(user)
-    token = create_token(user.id)
+    token = create_token(user.id, user.username)
     return UserResponse(user_id=user.id, username=user.username, token=token)
