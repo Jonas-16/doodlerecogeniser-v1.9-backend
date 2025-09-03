@@ -97,6 +97,7 @@ async def predict(req: PredictionRequest, db: Session = Depends(get_db)):
             history = PredictionHistory(
                 user_id=req.user_id,
                 predicted_class=label,
+                confidence=confidence, 
                 created_at=datetime.utcnow()
             )
             db.add(history)
@@ -318,6 +319,7 @@ def save_prediction(req: SavePredictionRequest, db: Session = Depends(get_db)):
     history = PredictionHistory(
         user_id=req.user_id,
         predicted_class=req.predicted_class,
+        confidence=req.confidence,
         created_at=datetime.utcnow()
     )
     db.add(history)
@@ -332,6 +334,7 @@ def get_history(user_id: int, db: Session = Depends(get_db)):
     return [
         {
             "predicted_class": h.predicted_class,
+            "confidence": h.confidence,
             "created_at": h.created_at.isoformat()
         }
         for h in history

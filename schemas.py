@@ -98,3 +98,4 @@ class ImageInput(BaseModel):
 class SavePredictionRequest(BaseModel):
     user_id: int
     predicted_class: str
+    confidence: float

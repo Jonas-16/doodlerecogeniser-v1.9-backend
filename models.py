@@ -3,7 +3,7 @@
 import numpy as np
 from typing import Optional, Dict, List, Tuple
 from config import config
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Float
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
 from database import Base
@@ -102,5 +102,6 @@ class PredictionHistory(Base):
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)  # assuming your user table is "users"
     predicted_class = Column(String, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
+    confidence = Column(Float, nullable=True)   # <--- NEW FIELD
 
     user = relationship("User", back_populates="predictions")
