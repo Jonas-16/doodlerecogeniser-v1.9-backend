@@ -48,8 +48,8 @@ def get_db():
     finally:
         db.close()
 
-# Exception handler will be added to the main app, not the router
 
+# --- AUTH ROUTES ---
 
 @router.get("/test", response_model=TestResponse)
 async def test():
@@ -334,3 +334,23 @@ def get_history(user_id: int, db: Session = Depends(get_db)):
         }
         for h in history
     ]
+
+@router.post("/login", response_model=UserResponse)
+def login(req: UserLogin, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.username == req.username).first()
+    if not user or not verify_password(req.password, user.password_hash):
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+    token = create_token(user.id)
+    return UserResponse(user_id=user.id, username=user.username, token=token)
+
+@router.post("/signin", response_model=UserResponse)
+def signin(req: UserCreate, db: Session = Depends(get_db)):
+    existing = db.query(User).filter(User.username == req.username).first()
+    if existing:
+        raise HTTPException(status_code=409, detail="Username already exists")
+    user = User(username=req.username, password_hash=hash_password(req.password))
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    token = create_token(user.id)
+    return UserResponse(user_id=user.id, username=user.username, token=token)
