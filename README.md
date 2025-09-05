@@ -14,14 +14,6 @@ An advanced AI-powered doodle recognition application that uses machine learning
 - 🌙 **Dark Theme UI** - Beautiful modern interface with Material-UI
 - ℹ️ **Interactive Info Modal** - Learn about app features
 
-
-## 🚀 Available Scripts
-
-- `npm start` - Runs the app in development mode
-- `npm test` - Launches the test runner
-- `npm run build` - Builds the app for production
-- `npm run eject` - Ejects from Create React App
-
 ## 🤝 Contributing
 
 1. Fork the repository
