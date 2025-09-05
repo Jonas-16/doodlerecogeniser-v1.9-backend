@@ -2,8 +2,6 @@
 
 An advanced AI-powered doodle recognition application that uses machine learning to identify drawings and generate AI artwork based on your sketches.
 
-![Doodle Recognition App](https://img.shields.io/badge/React-18.2.0-blue) ![Material-UI](https://img.shields.io/badge/Material--UI-5.0-purple) ![AI Powered](https://img.shields.io/badge/AI-Powered-green)
-
 ## ✨ Features
 
 - 🧠 **Real-time Drawing Recognition** - Uses neural networks to identify your doodles
